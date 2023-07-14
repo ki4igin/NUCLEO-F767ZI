@@ -80,7 +80,7 @@ void MX_UART4_Init(void)
 
     LL_GPIO_InitTypeDef GPIO_InitStruct = {0};
 
-    LL_RCC_SetUARTClockSource(LL_RCC_UART4_CLKSOURCE_PCLK1);
+    LL_RCC_SetUARTClockSource(LL_RCC_UART4_CLKSOURCE_PCLK1);    
 
     /* Peripheral clock enable */
     LL_APB1_GRP1_EnableClock(LL_APB1_GRP1_PERIPH_UART4);
@@ -146,7 +146,7 @@ void MX_UART4_Init(void)
             | LL_DMA_MDATAALIGN_BYTE);
 
     USART_InitStruct.BaudRate = 115200;
-    USART_InitStruct.DataWidth = LL_USART_DATAWIDTH_8B;
+    USART_InitStruct.DataWidth = LL_USART_DATAWIDTH_9B;
     USART_InitStruct.StopBits = LL_USART_STOPBITS_1;
     USART_InitStruct.Parity = LL_USART_PARITY_EVEN;
     USART_InitStruct.TransferDirection = LL_USART_DIRECTION_TX_RX;
@@ -231,7 +231,7 @@ void MX_UART7_Init(void)
             | LL_DMA_MDATAALIGN_BYTE);
 
     USART_InitStruct.BaudRate = 115200;
-    USART_InitStruct.DataWidth = LL_USART_DATAWIDTH_8B;
+    USART_InitStruct.DataWidth = LL_USART_DATAWIDTH_9B;
     USART_InitStruct.StopBits = LL_USART_STOPBITS_1;
     USART_InitStruct.Parity = LL_USART_PARITY_EVEN;
     USART_InitStruct.TransferDirection = LL_USART_DIRECTION_TX_RX;
@@ -248,6 +248,7 @@ void MX_UART7_Init(void)
 
 void uart4_send_array_dma(void *buf, uint32_t size)
 {
+    LL_DMA_ClearFlag_TC4(DMA1);
     LL_DMA_ConfigAddresses(
         DMA1,
         LL_DMA_STREAM_4,
@@ -260,6 +261,7 @@ void uart4_send_array_dma(void *buf, uint32_t size)
 
 void uart7_send_array_dma(void *buf, uint32_t size)
 {
+    LL_DMA_ClearFlag_TC1(DMA1);
     LL_DMA_ConfigAddresses(
         DMA1,
         LL_DMA_STREAM_1,
