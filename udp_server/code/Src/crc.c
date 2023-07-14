@@ -57,6 +57,28 @@ uint32_t CRC_calc_u8(void *data, uint32_t len)
     return LL_CRC_ReadData16(CRC);
 }
 
+void CRC_to_end_array_u16(void *data, uint32_t len)
+{
+    LL_CRC_SetInputDataReverseMode(CRC, LL_CRC_INDATA_REVERSE_HALFWORD);
+    LL_CRC_ResetCRCCalculationUnit(CRC);
+    uint16_t *p = data;
+    do {
+        LL_CRC_FeedData16(CRC, *p++);
+    } while (--len);
+    *p = LL_CRC_ReadData16(CRC);
+}
+
+void CRC_to_end_array_u8(void *data, uint32_t len)
+{
+    LL_CRC_SetInputDataReverseMode(CRC, LL_CRC_INDATA_REVERSE_BYTE);
+    LL_CRC_ResetCRCCalculationUnit(CRC);
+    uint8_t *p = data;
+    do {
+        LL_CRC_FeedData8(CRC, *p++);
+    } while (--len);
+    *(uint16_t *)p = LL_CRC_ReadData16(CRC);
+}
+
 uint32_t CRC_calc(void *data)
 {
     LL_CRC_ResetCRCCalculationUnit(CRC);
@@ -65,10 +87,10 @@ uint32_t CRC_calc(void *data)
     LL_CRC_FeedData32(CRC, *p_u32++);
     LL_CRC_FeedData32(CRC, *p_u32++);
     LL_CRC_SetInputDataReverseMode(CRC, LL_CRC_INDATA_REVERSE_HALFWORD);
-    uint16_t *p_u16 = p_u32;
+    uint16_t *p_u16 = (uint16_t *)p_u32;
     LL_CRC_FeedData16(CRC, *p_u16++);
     LL_CRC_SetInputDataReverseMode(CRC, LL_CRC_INDATA_REVERSE_BYTE);
-    uint8_t *p_u8 = p_u16;
+    uint8_t *p_u8 = (uint8_t *)p_u16;
     LL_CRC_FeedData8(CRC, *p_u8);
     // LL_CRC_SetInputDataReverseMode(CRC, LL_CRC_INDATA_REVERSE_BYTE);
     // uint8_t *p_u8 = (uint8_t *)p_u32;
