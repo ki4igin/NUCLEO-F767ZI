@@ -12,6 +12,6 @@ enum modbus_coil_state {
 void modbus_init(void);
 void modbus_write_single_coil(uint8_t id, uint16_t addr, enum modbus_coil_state state);
 void modbus_write_single_reg(uint8_t id, uint16_t addr, uint16_t val);
-void modbus_write_multi_reg(uint8_t id, uint16_t addr, uint16_t *data, uint16_t quality);
+void modbus_write_multi_regs(uint8_t id, uint16_t addr, uint16_t *data, uint16_t quality);
 
 #endif

@@ -75,7 +75,7 @@ int main(void)
         cnt++;
         if (cnt == 0) {
             // modbus_write_single_coil(1, 0x00AC, COIL_ON);
-            modbus_write_multi_reg(1, 0x00AC, (uint16_t *)&test_data, 2);
+            modbus_write_multi_regs(1, 0x00AC, (uint16_t *)&test_data, 2);
         } else if (cnt == INT16_MAX / 2) {
             // modbus_write_single_coil(1, 0x00AC, COIL_OFF);
         }

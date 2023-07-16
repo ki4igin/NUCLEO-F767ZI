@@ -65,7 +65,7 @@ void CRC_to_end_array_u16(void *data, uint32_t len)
     do {
         LL_CRC_FeedData16(CRC, *p++);
     } while (--len);
-    *p = LL_CRC_ReadData16(CRC);
+    *p = __REV16(LL_CRC_ReadData16(CRC));
 }
 
 void CRC_to_end_array_u8(void *data, uint32_t len)
@@ -76,7 +76,7 @@ void CRC_to_end_array_u8(void *data, uint32_t len)
     do {
         LL_CRC_FeedData8(CRC, *p++);
     } while (--len);
-    *(uint16_t *)p = LL_CRC_ReadData16(CRC);
+    *(uint16_t *)p = __REV16(LL_CRC_ReadData16(CRC));
 }
 
 uint32_t CRC_calc(void *data)
