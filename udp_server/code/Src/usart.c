@@ -1,32 +1,6 @@
-
-/**
- ******************************************************************************
- * @file    usart.c
- * @brief   This file provides code for the configuration
- *          of the USART instances.
- ******************************************************************************
- * @attention
- *
- * Copyright (c) 2023 STMicroelectronics.
- * All rights reserved.
- *
- * This software is licensed under terms that can be found in the LICENSE file
- * in the root directory of this software component.
- * If no LICENSE file comes with this software, it is provided AS-IS.
- *
- ******************************************************************************
- */
-
-/* Includes ------------------------------------------------------------------*/
 #include "usart.h"
+#include "main.h"
 #include "tools.h"
-
-#define BUF_SIZE 32
-
-uint8_t uart4_buf_tx[BUF_SIZE];
-uint8_t uart4_buf_rx[BUF_SIZE];
-uint8_t uart7_buf_tx[BUF_SIZE];
-uint8_t uart7_buf_rx[BUF_SIZE];
 
 /* USART3 init function */
 void MX_USART3_UART_Init(void)
@@ -80,11 +54,11 @@ void MX_UART4_Init(void)
 
     LL_GPIO_InitTypeDef GPIO_InitStruct = {0};
 
-    LL_RCC_SetUARTClockSource(LL_RCC_UART4_CLKSOURCE_PCLK1);    
+    LL_RCC_SetUARTClockSource(LL_RCC_UART4_CLKSOURCE_PCLK1);
 
     /* Peripheral clock enable */
     LL_APB1_GRP1_EnableClock(LL_APB1_GRP1_PERIPH_UART4);
-
+    LL_AHB1_GRP1_EnableClock(LL_AHB1_GRP1_PERIPH_DMA1);
     LL_AHB1_GRP1_EnableClock(LL_AHB1_GRP1_PERIPH_GPIOB);
     LL_AHB1_GRP1_EnableClock(LL_AHB1_GRP1_PERIPH_GPIOA);
     /**UART4 GPIO Configuration
@@ -127,13 +101,6 @@ void MX_UART4_Init(void)
             | LL_DMA_MODE_NORMAL | LL_DMA_PERIPH_NOINCREMENT
             | LL_DMA_MEMORY_INCREMENT | LL_DMA_PDATAALIGN_BYTE
             | LL_DMA_MDATAALIGN_BYTE);
-    LL_DMA_ConfigAddresses(
-        DMA1,
-        LL_DMA_STREAM_2,
-        LL_USART_DMA_GetRegAddr(UART4, LL_USART_DMA_REG_DATA_RECEIVE),
-        (uint32_t)uart4_buf_rx,
-        LL_DMA_GetDataTransferDirection(DMA1, LL_DMA_STREAM_2));
-    LL_DMA_SetDataLength(DMA1, LL_DMA_STREAM_2, arrlen(uart4_buf_rx));
 
     /* UART4_TX Init */
     LL_DMA_SetChannelSelection(DMA1, LL_DMA_STREAM_4, LL_DMA_CHANNEL_4);
@@ -144,6 +111,10 @@ void MX_UART4_Init(void)
             | LL_DMA_MODE_NORMAL | LL_DMA_PERIPH_NOINCREMENT
             | LL_DMA_MEMORY_INCREMENT | LL_DMA_PDATAALIGN_BYTE
             | LL_DMA_MDATAALIGN_BYTE);
+
+    /* UART4 interrupt Init */
+    NVIC_SetPriority(UART4_IRQn, NVIC_EncodePriority(NVIC_GetPriorityGrouping(), 0, 0));
+    NVIC_EnableIRQ(UART4_IRQn);
 
     USART_InitStruct.BaudRate = 115200;
     USART_InitStruct.DataWidth = LL_USART_DATAWIDTH_9B;
@@ -159,9 +130,13 @@ void MX_UART4_Init(void)
     LL_USART_SetDEDeassertionTime(UART4, 0);
     LL_USART_ConfigAsyncMode(UART4);
 
+    LL_USART_SetRxTimeout(UART4, 35);
+    LL_USART_EnableRxTimeout(UART4);
+    LL_USART_EnableIT_RTO(UART4);
+
     LL_USART_EnableDMAReq_TX(UART4);
     LL_USART_EnableDMAReq_RX(UART4);
-    LL_DMA_EnableStream(DMA1, LL_DMA_STREAM_2);
+    // LL_DMA_EnableStream(DMA1, LL_DMA_STREAM_2);
 
     LL_USART_Enable(UART4);
 }
@@ -177,7 +152,7 @@ void MX_UART7_Init(void)
 
     /* Peripheral clock enable */
     LL_APB1_GRP1_EnableClock(LL_APB1_GRP1_PERIPH_UART7);
-
+    LL_AHB1_GRP1_EnableClock(LL_AHB1_GRP1_PERIPH_DMA1);
     LL_AHB1_GRP1_EnableClock(LL_AHB1_GRP1_PERIPH_GPIOE);
     /**UART7 GPIO Configuration
     PE7   ------> UART7_RX
@@ -258,6 +233,33 @@ void uart4_send_array_dma(void *buf, uint32_t size)
     LL_DMA_SetDataLength(DMA1, LL_DMA_STREAM_4, size);
     LL_DMA_EnableStream(DMA1, LL_DMA_STREAM_4);
 }
+
+void uart4_receive_array_dma(void *buf, uint32_t size)
+{
+    LL_DMA_ClearFlag_TC2(DMA1);
+    LL_DMA_ConfigAddresses(
+        DMA1,
+        LL_DMA_STREAM_2,
+        LL_USART_DMA_GetRegAddr(UART4, LL_USART_DMA_REG_DATA_RECEIVE),
+        (uint32_t)buf,
+        LL_DMA_GetDataTransferDirection(DMA1, LL_DMA_STREAM_2));
+    LL_DMA_SetDataLength(DMA1, LL_DMA_STREAM_2, size);
+    LL_DMA_EnableStream(DMA1, LL_DMA_STREAM_2);
+}
+
+void UART4_IRQHandler(void)
+{
+    if (LL_USART_IsActiveFlag_RTO(UART4)) {
+        LL_USART_ClearFlag_RTO(UART4);
+        uart4_receive_callback(
+            (void *)LL_DMA_GetMemoryAddress(DMA1, LL_DMA_STREAM_2),
+            USART_MAX_BUF_SIZE - LL_DMA_GetCurrentTargetMem(DMA1, LL_DMA_STREAM_2));
+    }
+}
+
+// __weak void uart4_receive_callback(void *buf, uint32_t size)
+// {
+// }
 
 void uart7_send_array_dma(void *buf, uint32_t size)
 {

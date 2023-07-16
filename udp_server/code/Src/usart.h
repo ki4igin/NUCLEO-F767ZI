@@ -1,55 +1,18 @@
-/* USER CODE BEGIN Header */
-/**
-  ******************************************************************************
-  * @file    usart.h
-  * @brief   This file contains all the function prototypes for
-  *          the usart.c file
-  ******************************************************************************
-  * @attention
-  *
-  * Copyright (c) 2023 STMicroelectronics.
-  * All rights reserved.
-  *
-  * This software is licensed under terms that can be found in the LICENSE file
-  * in the root directory of this software component.
-  * If no LICENSE file comes with this software, it is provided AS-IS.
-  *
-  ******************************************************************************
-  */
-/* USER CODE END Header */
-/* Define to prevent recursive inclusion -------------------------------------*/
 #ifndef __USART_H__
 #define __USART_H__
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+#include "stm32f7xx.h"
 
-/* Includes ------------------------------------------------------------------*/
-#include "main.h"
-
-/* USER CODE BEGIN Includes */
-
-/* USER CODE END Includes */
-
-/* USER CODE BEGIN Private defines */
-
-/* USER CODE END Private defines */
+#define USART_MAX_BUF_SIZE 128
 
 void MX_USART3_UART_Init(void);
 void MX_UART4_Init(void);
 void MX_UART7_Init(void);
 
 void uart4_send_array_dma(void *buf, uint32_t size);
+void uart4_receive_array_dma(void *buf, uint32_t size);
+void uart4_receive_callback(void *buf, uint32_t size);
 void uart7_send_array_dma(void *buf, uint32_t size);
 
-/* USER CODE BEGIN Prototypes */
-
-/* USER CODE END Prototypes */
-
-#ifdef __cplusplus
-}
 #endif
-
-#endif /* __USART_H__ */
 
