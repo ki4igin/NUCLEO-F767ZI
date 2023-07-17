@@ -24,6 +24,7 @@
 #include "debug.h"
 #include "udp_server.h"
 #include "modbus.h"
+#include "motor.h"
 
 /* Private includes ----------------------------------------------------------*/
 
@@ -75,9 +76,9 @@ int main(void)
         cnt++;
         if (cnt == 0) {
             // modbus_write_single_coil(1, 0x00AC, COIL_ON);
-            modbus_write_multi_regs(1, 0x00AC, (uint16_t *)&test_data, 2);
+            motor_az_offset(1.0f);
         } else if (cnt == INT16_MAX / 2) {
-            // modbus_write_single_coil(1, 0x00AC, COIL_OFF);
+            modbus_write_multi_regs(&modbus2, 0x00AC, (uint16_t *)&test_data, 2);
         }
     }
 }
