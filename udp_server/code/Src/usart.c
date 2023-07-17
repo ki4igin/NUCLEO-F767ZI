@@ -205,6 +205,10 @@ void MX_UART7_Init(void)
             | LL_DMA_MEMORY_INCREMENT | LL_DMA_PDATAALIGN_BYTE
             | LL_DMA_MDATAALIGN_BYTE);
 
+    /* UART7 interrupt Init */
+    NVIC_SetPriority(UART7_IRQn, NVIC_EncodePriority(NVIC_GetPriorityGrouping(), 0, 0));
+    NVIC_EnableIRQ(UART7_IRQn);
+
     USART_InitStruct.BaudRate = 115200;
     USART_InitStruct.DataWidth = LL_USART_DATAWIDTH_9B;
     USART_InitStruct.StopBits = LL_USART_STOPBITS_1;
@@ -218,6 +222,14 @@ void MX_UART7_Init(void)
     LL_USART_SetDEAssertionTime(UART7, 0);
     LL_USART_SetDEDeassertionTime(UART7, 0);
     LL_USART_ConfigAsyncMode(UART7);
+
+    LL_USART_SetRxTimeout(UART7, 35);
+    LL_USART_EnableRxTimeout(UART7);
+    LL_USART_EnableIT_RTO(UART7);
+
+    LL_USART_EnableDMAReq_TX(UART7);
+    LL_USART_EnableDMAReq_RX(UART7);
+
     LL_USART_Enable(UART7);
 }
 
@@ -251,9 +263,10 @@ void UART4_IRQHandler(void)
 {
     if (LL_USART_IsActiveFlag_RTO(UART4)) {
         LL_USART_ClearFlag_RTO(UART4);
+        LL_DMA_DisableStream(DMA1, LL_DMA_STREAM_2);
         uart4_receive_callback(
             (void *)LL_DMA_GetMemoryAddress(DMA1, LL_DMA_STREAM_2),
-            USART_MAX_BUF_SIZE - LL_DMA_GetCurrentTargetMem(DMA1, LL_DMA_STREAM_2));
+            USART_MAX_BUF_SIZE - LL_DMA_GetDataLength(DMA1, LL_DMA_STREAM_2));
     }
 }
 
@@ -272,4 +285,28 @@ void uart7_send_array_dma(void *buf, uint32_t size)
         LL_DMA_GetDataTransferDirection(DMA1, LL_DMA_STREAM_1));
     LL_DMA_SetDataLength(DMA1, LL_DMA_STREAM_1, size);
     LL_DMA_EnableStream(DMA1, LL_DMA_STREAM_1);
+}
+
+void uart7_receive_array_dma(void *buf, uint32_t size)
+{
+    LL_DMA_ClearFlag_TC3(DMA1);
+    LL_DMA_ConfigAddresses(
+        DMA1,
+        LL_DMA_STREAM_3,
+        LL_USART_DMA_GetRegAddr(UART7, LL_USART_DMA_REG_DATA_RECEIVE),
+        (uint32_t)buf,
+        LL_DMA_GetDataTransferDirection(DMA1, LL_DMA_STREAM_3));
+    LL_DMA_SetDataLength(DMA1, LL_DMA_STREAM_3, size);
+    LL_DMA_EnableStream(DMA1, LL_DMA_STREAM_3);
+}
+
+void UART7_IRQHandler(void)
+{
+    if (LL_USART_IsActiveFlag_RTO(UART7)) {
+        LL_USART_ClearFlag_RTO(UART7);
+        LL_DMA_DisableStream(DMA1, LL_DMA_STREAM_3);
+        uart7_receive_callback(
+            (void *)LL_DMA_GetMemoryAddress(DMA1, LL_DMA_STREAM_3),
+            USART_MAX_BUF_SIZE - LL_DMA_GetDataLength(DMA1, LL_DMA_STREAM_3));
+    }
 }
