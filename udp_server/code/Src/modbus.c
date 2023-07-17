@@ -91,12 +91,15 @@ union modbus_response {
     uint8_t raw[BUF_SIZE];
 };
 
+typedef void (*modbus_array_fn)(void *raw, uint32_t size);
+
 struct modbus {
     struct modbus_out out;
     union modbus_request request;
     union modbus_response response;
-    void (*send_request)(void *raw, uint32_t size);
-    void (*receive_response)(void *raw, uint32_t size);
+    modbus_array_fn send_request;
+    modbus_array_fn receive_response;
+    modbus_recv_fn response_callback;
 } modbus1 = {
     .request.header.id = 0x01,
     .send_request = uart4_send_array_dma,
@@ -115,6 +118,11 @@ void modbus_init(void)
     MX_UART4_Init();
     MX_UART7_Init();
     CRC_Init();
+}
+
+void modbus_recv(struct modbus *modbus, modbus_recv_fn recv)
+{
+    modbus->response_callback = recv;
 }
 
 void modbus_write_single_coil(struct modbus *modbus, uint16_t addr, enum modbus_coil_state state)
@@ -221,6 +229,8 @@ void modbus_response_working(struct modbus *modbus, uint32_t size)
     default:
         break;
     }
+
+    modbus->response_callback();
 }
 
 void uart4_receive_callback(uint32_t size)

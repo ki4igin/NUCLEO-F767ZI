@@ -15,14 +15,17 @@ struct modbus_out {
     uint16_t regs[8];
 };
 
+typedef void (*modbus_recv_fn)(void);
+
 extern struct modbus modbus1, modbus2;
 
-static inline struct modbus_out * modbus_get_out(struct modbus *modbus)
+inline static struct modbus_out *modbus_get_out(struct modbus *modbus)
 {
     return (struct modbus_out *)modbus;
 }
 
 void modbus_init(void);
+void modbus_recv(struct modbus *modbus, modbus_recv_fn recv);
 void modbus_write_single_coil(struct modbus *modbus, uint16_t addr, enum modbus_coil_state state);
 void modbus_write_single_reg(struct modbus *modbus, uint16_t addr, uint16_t val);
 void modbus_write_multi_regs(struct modbus *modbus, uint16_t addr, uint16_t *data, uint16_t quality);
