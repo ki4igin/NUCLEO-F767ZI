@@ -183,7 +183,7 @@ void modbus_read_input_regs(struct modbus *modbus, uint16_t addr, uint16_t quali
     modbus->receive_response(modbus->response.raw, USART_MAX_BUF_SIZE);
 }
 
-void modbus_response_callback(struct modbus *modbus, uint32_t size)
+void modbus_response_working(struct modbus *modbus, uint32_t size)
 {
     if (CRC_is_valid_u8(modbus->response.raw, size) == 0) {
         return;
@@ -223,12 +223,12 @@ void modbus_response_callback(struct modbus *modbus, uint32_t size)
     }
 }
 
-void uart4_receive_callback(void *buf, uint32_t size)
+void uart4_receive_callback(uint32_t size)
 {
-    modbus_response_callback(&modbus1, size);
+    modbus_response_working(&modbus1, size);
 }
 
-void uart7_receive_callback(void *buf, uint32_t size)
+void uart7_receive_callback(uint32_t size)
 {
-    modbus_response_callback(&modbus2, size);
+    modbus_response_working(&modbus2, size);
 }

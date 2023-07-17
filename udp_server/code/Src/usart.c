@@ -265,7 +265,6 @@ void UART4_IRQHandler(void)
         LL_USART_ClearFlag_RTO(UART4);
         LL_DMA_DisableStream(DMA1, LL_DMA_STREAM_2);
         uart4_receive_callback(
-            (void *)LL_DMA_GetMemoryAddress(DMA1, LL_DMA_STREAM_2),
             USART_MAX_BUF_SIZE - LL_DMA_GetDataLength(DMA1, LL_DMA_STREAM_2));
     }
 }
@@ -306,7 +305,6 @@ void UART7_IRQHandler(void)
         LL_USART_ClearFlag_RTO(UART7);
         LL_DMA_DisableStream(DMA1, LL_DMA_STREAM_3);
         uart7_receive_callback(
-            (void *)LL_DMA_GetMemoryAddress(DMA1, LL_DMA_STREAM_3),
             USART_MAX_BUF_SIZE - LL_DMA_GetDataLength(DMA1, LL_DMA_STREAM_3));
     }
 }

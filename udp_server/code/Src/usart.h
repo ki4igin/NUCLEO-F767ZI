@@ -11,11 +11,11 @@ void MX_UART7_Init(void);
 
 void uart4_send_array_dma(void *buf, uint32_t size);
 void uart4_receive_array_dma(void *buf, uint32_t size);
-void uart4_receive_callback(void *buf, uint32_t size);
+void uart4_receive_callback(uint32_t size);
 
 void uart7_send_array_dma(void *buf, uint32_t size);
 void uart7_receive_array_dma(void *buf, uint32_t size);
-void uart7_receive_callback(void *buf, uint32_t size);
+void uart7_receive_callback(uint32_t size);
 
 #endif
 
