@@ -5,7 +5,7 @@
 #include "assert.h"
 #include "debug.h"
 
-#define BUF_SIZE 128
+#define REGS_COUNT_MAX 4
 
 enum modbus_func {
     MODBUS_FUNC_READ_HOLDING_REGS = 0x03,
@@ -41,62 +41,49 @@ struct modbus_regs_header {
     uint16_t quality;
 };
 
-union modbus_request {
-    struct {
-        struct modbus_header header;
+struct modbus_request {
+    struct modbus_header header;
 
-        union {
-            struct modbus_coil coil;
+    union {
+        struct modbus_coil coil;
 
-            struct modbus_reg reg;
+        struct modbus_reg reg;
 
-            struct modbus_multi_regs {
-                struct modbus_regs_header header;
-                uint8_t byte_count;
-                uint16_t regs[];
-            } __attribute__((packed)) multi_regs;
+        struct modbus_multi_regs {
+            struct modbus_regs_header header;
+            uint8_t byte_count;
+            uint16_t regs[REGS_COUNT_MAX];
+        } __attribute__((packed)) multi_regs;
 
-            struct modbus_regs_header holding_regs;
+        struct modbus_regs_header holding_regs;
 
-            struct modbus_regs_header input_regs;
-        };
+        struct modbus_regs_header input_regs;
     };
-
-    uint8_t raw[BUF_SIZE];
 };
 
-union modbus_response {
-    struct {
-        struct modbus_header header;
+struct modbus_response {
+    struct modbus_header header;
 
-        union {
-            struct {
-                uint8_t byte_count;
-                uint16_t regs[];
-            } __attribute__((packed)) holding_regs;
+    union {
+        struct {
+            uint8_t byte_count;
+            uint16_t regs[REGS_COUNT_MAX];
+        } __attribute__((packed)) holding_regs, input_regs;
 
-            struct {
-                uint8_t byte_count;
-                uint16_t regs[];
-            } __attribute__((packed)) input_regs;
+        struct modbus_coil coil;
 
-            struct modbus_coil coil;
+        struct modbus_reg reg;
 
-            struct modbus_reg reg;
-
-            struct modbus_regs_header multi_regs;
-        };
+        struct modbus_regs_header multi_regs;
     };
-
-    uint8_t raw[BUF_SIZE];
 };
 
 typedef void (*modbus_array_fn)(void *raw, uint32_t size);
 
 struct modbus {
     struct modbus_out out;
-    union modbus_request request;
-    union modbus_response response;
+    struct modbus_request request;
+    struct modbus_response response;
     modbus_array_fn send_request;
     modbus_array_fn receive_response;
     modbus_recv_fn response_callback;
@@ -128,23 +115,23 @@ void modbus_recv(struct modbus *modbus, modbus_recv_fn recv)
 void modbus_write_single_coil(struct modbus *modbus, uint16_t addr, enum modbus_coil_state state)
 {
     modbus->request.header.func = MODBUS_FUNC_WRITE_SINGLE_COIL;
-    modbus->request.coil.addr = __REV16(addr);
-    modbus->request.coil.state = __REV16(state);
+    modbus->request.coil.addr = __REVSH(addr);
+    modbus->request.coil.state = __REVSH(state);
     uint32_t size = sizeof(struct modbus_header) + sizeof(struct modbus_coil);
-    CRC_to_end_array_u16(modbus->request.raw, size / 2);
-    modbus->send_request(modbus->request.raw, size + CRC_SIZE);
-    modbus->receive_response(modbus->response.raw, USART_MAX_BUF_SIZE);
+    CRC_to_end_array_u16(&modbus->request, size / 2);
+    modbus->send_request(&modbus->request, size + CRC_SIZE);
+    modbus->receive_response(&modbus->response, sizeof(struct modbus_response));
 }
 
 void modbus_write_single_reg(struct modbus *modbus, uint16_t addr, uint16_t val)
 {
     modbus->request.header.func = MODBUS_FUNC_WRITE_SINGLE_COIL;
-    modbus->request.reg.addr = __REV16(addr);
-    modbus->request.reg.val = __REV16(val);
+    modbus->request.reg.addr = __REVSH(addr);
+    modbus->request.reg.val = __REVSH(val);
     uint32_t size = sizeof(struct modbus_header) + sizeof(struct modbus_reg);
-    CRC_to_end_array_u16(modbus->request.raw, size / 2);
-    modbus->send_request(modbus->request.raw, size + CRC_SIZE);
-    modbus->receive_response(modbus->response.raw, USART_MAX_BUF_SIZE);
+    CRC_to_end_array_u16(&modbus->request, size / 2);
+    modbus->send_request(&modbus->request, size + CRC_SIZE);
+    modbus->receive_response(&modbus->response, sizeof(struct modbus_response));
 }
 
 void modbus_write_multi_regs(struct modbus *modbus, uint16_t addr, uint16_t *data, uint16_t quality)
@@ -152,48 +139,49 @@ void modbus_write_multi_regs(struct modbus *modbus, uint16_t addr, uint16_t *dat
     debug_printf("modbus: write multi regs\n");
 
     modbus->request.header.func = MODBUS_FUNC_WRITE_MULTIPLE_REGS;
-    modbus->request.multi_regs.header.addr = __REV16(addr);
-    modbus->request.multi_regs.header.quality = __REV16(quality);
+    modbus->request.multi_regs.header.addr = __REVSH(addr);
+    modbus->request.multi_regs.header.quality = __REVSH(quality);
     modbus->request.multi_regs.byte_count = quality * 2;
     uint32_t size = sizeof(struct modbus_header)
                   + sizeof(struct modbus_multi_regs)
+                  - REGS_COUNT_MAX * 2
                   + quality * 2;
     uint16_t *frame_data = modbus->request.multi_regs.regs;
     do {
         *frame_data++ = *data++;
     } while (--quality);
-    CRC_to_end_array_u8(modbus->request.raw, size);
-    modbus->send_request(modbus->request.raw, size + CRC_SIZE);
-    modbus->receive_response(modbus->response.raw, USART_MAX_BUF_SIZE);
+    CRC_to_end_array_u8(&modbus->request, size);
+    modbus->send_request(&modbus->request, size + CRC_SIZE);
+    modbus->receive_response(&modbus->response, sizeof(struct modbus_response));
 }
 
 void modbus_read_holding_regs(struct modbus *modbus, uint16_t addr, uint16_t quality)
 {
     modbus->request.header.func = MODBUS_FUNC_READ_HOLDING_REGS;
-    modbus->request.holding_regs.addr = __REV16(addr);
-    modbus->request.holding_regs.quality = __REV16(quality);
+    modbus->request.holding_regs.addr = __REVSH(addr);
+    modbus->request.holding_regs.quality = __REVSH(quality);
     uint32_t size = sizeof(struct modbus_header)
                   + sizeof(struct modbus_regs_header);
-    CRC_to_end_array_u16(modbus->request.raw, size / 2);
-    modbus->send_request(modbus->request.raw, size + CRC_SIZE);
-    modbus->receive_response(modbus->response.raw, USART_MAX_BUF_SIZE);
+    CRC_to_end_array_u16(&modbus->request, size / 2);
+    modbus->send_request(&modbus->request, size + CRC_SIZE);
+    modbus->receive_response(&modbus->response, sizeof(struct modbus_response));
 }
 
 void modbus_read_input_regs(struct modbus *modbus, uint16_t addr, uint16_t quality)
 {
     modbus->request.header.func = MODBUS_FUNC_READ_INPUT_REGS;
-    modbus->request.input_regs.addr = __REV16(addr);
-    modbus->request.input_regs.quality = __REV16(quality);
+    modbus->request.input_regs.addr = __REVSH(addr);
+    modbus->request.input_regs.quality = __REVSH(quality);
     uint32_t size = sizeof(struct modbus_header)
                   + sizeof(struct modbus_regs_header);
-    CRC_to_end_array_u16(modbus->request.raw, size / 2);
-    modbus->send_request(modbus->request.raw, size + CRC_SIZE);
-    modbus->receive_response(modbus->response.raw, USART_MAX_BUF_SIZE);
+    CRC_to_end_array_u16(&modbus->request, size / 2);
+    modbus->send_request(&modbus->request, size + CRC_SIZE);
+    modbus->receive_response(&modbus->response, sizeof(struct modbus_response));
 }
 
 void modbus_response_working(struct modbus *modbus, uint32_t size)
 {
-    if (CRC_is_valid_u8(modbus->response.raw, size) == 0) {
+    if (CRC_calc_u8(&modbus->response, size) != 0) {
         return;
     }
 
@@ -212,8 +200,8 @@ void modbus_response_working(struct modbus *modbus, uint32_t size)
         uint32_t count = modbus->response.holding_regs.byte_count * 2;
         modbus->out.quality = count;
         for (uint32_t i = 0; i < count; i++) {
-            debug_printf("0x%x\n", __REV16(modbus->response.holding_regs.regs[i]));
-            modbus->out.regs[i] = __REV16(modbus->response.holding_regs.regs[i]);
+            debug_printf("0x%x\n", __REVSH(modbus->response.holding_regs.regs[i]));
+            modbus->out.regs[i] = __REVSH(modbus->response.holding_regs.regs[i]);
         }
         modbus->out.status = 1;
     } break;
@@ -221,7 +209,7 @@ void modbus_response_working(struct modbus *modbus, uint32_t size)
         uint32_t count = modbus->response.input_regs.byte_count * 2;
         modbus->out.quality = count;
         for (uint32_t i = 0; i < count; i++) {
-            modbus->out.regs[i] = __REV16(modbus->response.input_regs.regs[i]);
+            modbus->out.regs[i] = __REVSH(modbus->response.input_regs.regs[i]);
         }
         modbus->out.status = 1;
     } break;
