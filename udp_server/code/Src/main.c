@@ -64,11 +64,13 @@ int main(void)
 
     udp_server_init();
     modbus_init();
+    motor_init();
 
     /* Infinite loop */
 
     uint16_t cnt = 0;
     const uint32_t test_data = 0xAAAABBBB;
+    float deg = 0;
 
     while (1) {
         MX_LWIP_Process();
@@ -76,7 +78,8 @@ int main(void)
         cnt++;
         if (cnt == 0) {
             // modbus_write_single_coil(1, 0x00AC, COIL_ON);
-            motor_az_offset(1.0f);
+            deg += 0.1;
+            motor_az_offset(deg);
         } else if (cnt == INT16_MAX / 2) {
             modbus_write_multi_regs(&modbus2, 0x00AC, (uint16_t *)&test_data, 2);
         }

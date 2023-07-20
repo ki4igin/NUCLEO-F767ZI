@@ -5,5 +5,6 @@
 
 void motor_init(void);
 void motor_az_offset(float delta);
+void motor_el_offset(float delta);
 
 #endif
