@@ -6,7 +6,7 @@
 
 enum modbus_coil_state {
     COIL_OFF = 0x0000,
-    COIL_ON = 0x00FF
+    COIL_ON = 0xFF00
 };
 
 struct modbus_out {
