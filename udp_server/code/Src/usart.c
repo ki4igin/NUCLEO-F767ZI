@@ -246,8 +246,11 @@ void uart4_send_array_dma(void *buf, uint32_t size)
     LL_DMA_EnableStream(DMA1, LL_DMA_STREAM_4);
 }
 
+static uint32_t uart4_receive_size;
+
 void uart4_receive_array_dma(void *buf, uint32_t size)
 {
+    uart4_receive_size = size;
     LL_DMA_ClearFlag_TC2(DMA1);
     LL_DMA_ConfigAddresses(
         DMA1,
@@ -265,7 +268,7 @@ void UART4_IRQHandler(void)
         LL_USART_ClearFlag_RTO(UART4);
         LL_DMA_DisableStream(DMA1, LL_DMA_STREAM_2);
         uart4_receive_callback(
-            USART_MAX_BUF_SIZE - LL_DMA_GetDataLength(DMA1, LL_DMA_STREAM_2));
+            uart4_receive_size - LL_DMA_GetDataLength(DMA1, LL_DMA_STREAM_2));
     }
 }
 
@@ -286,8 +289,11 @@ void uart7_send_array_dma(void *buf, uint32_t size)
     LL_DMA_EnableStream(DMA1, LL_DMA_STREAM_1);
 }
 
+static uint32_t uart7_receive_size;
+
 void uart7_receive_array_dma(void *buf, uint32_t size)
 {
+    uart7_receive_size = size;
     LL_DMA_ClearFlag_TC3(DMA1);
     LL_DMA_ConfigAddresses(
         DMA1,
@@ -305,6 +311,6 @@ void UART7_IRQHandler(void)
         LL_USART_ClearFlag_RTO(UART7);
         LL_DMA_DisableStream(DMA1, LL_DMA_STREAM_3);
         uart7_receive_callback(
-            USART_MAX_BUF_SIZE - LL_DMA_GetDataLength(DMA1, LL_DMA_STREAM_3));
+            uart7_receive_size - LL_DMA_GetDataLength(DMA1, LL_DMA_STREAM_3));
     }
 }
