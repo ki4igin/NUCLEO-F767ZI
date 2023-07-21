@@ -125,7 +125,7 @@ void modbus_write_single_coil(struct modbus *modbus, uint16_t addr, enum modbus_
 
 void modbus_write_single_reg(struct modbus *modbus, uint16_t addr, uint16_t val)
 {
-    modbus->request.header.func = MODBUS_FUNC_WRITE_SINGLE_COIL;
+    modbus->request.header.func = MODBUS_FUNC_WRITE_SINGLE_REG;
     modbus->request.reg.addr = __REVSH(addr);
     modbus->request.reg.val = __REVSH(val);
     uint32_t size = sizeof(struct modbus_header) + sizeof(struct modbus_reg);
