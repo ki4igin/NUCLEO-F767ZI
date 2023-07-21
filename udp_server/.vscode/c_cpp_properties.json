@@ -9,6 +9,7 @@
                 "DEBUG",
                 "STM32F767xx",
                 "USE_FULL_LL_DRIVER",
+                "HSE_VALUE=10000000U",
                 "USE_HAL_DRIVER"
             ],
             "cStandard": "gnu17",
