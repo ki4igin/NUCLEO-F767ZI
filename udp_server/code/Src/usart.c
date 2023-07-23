@@ -2,6 +2,8 @@
 #include "main.h"
 #include "tools.h"
 
+#define UART_RECV_TIMEOUT 100
+
 /* USART3 init function */
 void MX_USART3_UART_Init(void)
 {
@@ -246,11 +248,13 @@ void uart4_send_array_dma(void *buf, uint32_t size)
     LL_DMA_EnableStream(DMA1, LL_DMA_STREAM_4);
 }
 
-static uint32_t uart4_receive_size;
+static uint32_t uart4_recv_size;
+static uint32_t uart4_recv_timeout;
 
 void uart4_receive_array_dma(void *buf, uint32_t size)
 {
-    uart4_receive_size = size;
+    uart4_recv_size = size;
+    uart4_recv_timeout = UART_RECV_TIMEOUT;
     LL_DMA_ClearFlag_TC2(DMA1);
     LL_DMA_ConfigAddresses(
         DMA1,
@@ -267,14 +271,10 @@ void UART4_IRQHandler(void)
     if (LL_USART_IsActiveFlag_RTO(UART4)) {
         LL_USART_ClearFlag_RTO(UART4);
         LL_DMA_DisableStream(DMA1, LL_DMA_STREAM_2);
-        uart4_receive_callback(
-            uart4_receive_size - LL_DMA_GetDataLength(DMA1, LL_DMA_STREAM_2));
+        uart4_recv_callback(
+            uart4_recv_size - LL_DMA_GetDataLength(DMA1, LL_DMA_STREAM_2));
     }
 }
-
-// __weak void uart4_receive_callback(void *buf, uint32_t size)
-// {
-// }
 
 void uart7_send_array_dma(void *buf, uint32_t size)
 {
@@ -289,11 +289,13 @@ void uart7_send_array_dma(void *buf, uint32_t size)
     LL_DMA_EnableStream(DMA1, LL_DMA_STREAM_1);
 }
 
-static uint32_t uart7_receive_size;
+static uint32_t uart7_recv_size;
+static uint32_t uart7_recv_timeout;
 
-void uart7_receive_array_dma(void *buf, uint32_t size)
+void uart7_recv_array_dma(void *buf, uint32_t size)
 {
-    uart7_receive_size = size;
+    uart7_recv_size = size;
+    uart7_recv_timeout = UART_RECV_TIMEOUT;
     LL_DMA_ClearFlag_TC3(DMA1);
     LL_DMA_ConfigAddresses(
         DMA1,
@@ -310,7 +312,25 @@ void UART7_IRQHandler(void)
     if (LL_USART_IsActiveFlag_RTO(UART7)) {
         LL_USART_ClearFlag_RTO(UART7);
         LL_DMA_DisableStream(DMA1, LL_DMA_STREAM_3);
-        uart7_receive_callback(
-            uart7_receive_size - LL_DMA_GetDataLength(DMA1, LL_DMA_STREAM_3));
+        uart7_recv_callback(
+            uart7_recv_size - LL_DMA_GetDataLength(DMA1, LL_DMA_STREAM_3));
+    }
+}
+
+void SysTick_Callback(void)
+{
+    if (LL_DMA_IsEnabledStream(DMA1, LL_DMA_STREAM_2)) {
+        if (--uart4_recv_timeout == 0) {
+            LL_DMA_DisableStream(DMA1, LL_DMA_STREAM_2);
+            uart4_recv_callback(
+                uart4_recv_size - LL_DMA_GetDataLength(DMA1, LL_DMA_STREAM_2));
+        }
+    }
+    if (LL_DMA_IsEnabledStream(DMA1, LL_DMA_STREAM_3)) {
+        if (--uart7_recv_timeout == 0) {
+            LL_DMA_DisableStream(DMA1, LL_DMA_STREAM_3);
+            uart7_recv_callback(
+                uart7_recv_size - LL_DMA_GetDataLength(DMA1, LL_DMA_STREAM_3));
+        }
     }
 }
