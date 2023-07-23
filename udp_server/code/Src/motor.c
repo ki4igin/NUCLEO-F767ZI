@@ -1,10 +1,23 @@
 #include "motor.h"
 #include "motor_regs.h"
 #include "modbus.h"
+#include "usart.h"
 #include "debug.h"
 
-#define modbus_az modbus1
-#define modbus_el modbus2
+static void az_recv_callback(struct modbus_out *out);
+static void el_recv_callback(struct modbus_out *out);
+
+static struct modbus modbus_az = {
+    .req.head.id = 0x01,
+    .send_req = uart4_send_array_dma,
+    .recv_resp = uart4_receive_array_dma,
+    .resp_callback = az_recv_callback};
+
+static struct modbus modbus_el = {
+    .req.head.id = 0x01,
+    .send_req = uart7_send_array_dma,
+    .recv_resp = uart7_recv_array_dma,
+    .resp_callback = el_recv_callback};
 
 enum motor_state {
     STATE_IDLE,
@@ -18,8 +31,12 @@ struct motor {
 } az = {.modbus = &modbus_az},
   el = {.modbus = &modbus_el};
 
-static void recv_callback(struct motor *motor)
+static void recv_callback(struct motor *motor, struct modbus_out *out)
 {
+    if (out->status == MODBUS_ERR_TIMEOUT) {
+        return;
+    }
+
     switch (motor->state) {
     case STATE_SET_HR_OFFSET: {
         modbus_write_single_coil(motor->modbus, C_START, COIL_ON);
@@ -34,14 +51,24 @@ static void recv_callback(struct motor *motor)
     }
 }
 
-static void az_recv_callback(void)
+void uart4_recv_callback(uint32_t size)
 {
-    recv_callback(&az);
+    modbus_resp_working(&modbus_az, size);
 }
 
-static void el_recv_callback(void)
+void uart7_recv_callback(uint32_t size)
 {
-    recv_callback(&el);
+    modbus_resp_working(&modbus_el, size);
+}
+
+static void az_recv_callback(struct modbus_out *out)
+{
+    recv_callback(&az, out);
+}
+
+static void el_recv_callback(struct modbus_out *out)
+{
+    recv_callback(&el, out);
 }
 
 static void motor_offset(struct motor *motor, float delta)
@@ -57,8 +84,9 @@ static void motor_offset(struct motor *motor, float delta)
 
 void motor_init(void)
 {
-    modbus_recv(&modbus_az, az_recv_callback);
-    modbus_recv(&modbus_el, el_recv_callback);
+    MX_UART4_Init();
+    MX_UART7_Init();
+    modbus_init();
     // modbus_write_single_reg(&modbus_az, HR_MODE_DEVICE, 1);
     // modbus_write_single_reg(&modbus_el, HR_MODE_DEVICE, 1);
     delay_ms(5);
