@@ -3,7 +3,7 @@
 #include "stm32f7xx_ll_bus.h"
 
 /* CRC init function */
-void CRC16_Init(void)
+void crc16_init(void)
 {
     /* Peripheral clock enable */
     LL_AHB1_GRP1_EnableClock(LL_AHB1_GRP1_PERIPH_CRC);
@@ -15,7 +15,7 @@ void CRC16_Init(void)
     LL_CRC_SetPolynomialSize(CRC, LL_CRC_POLYLENGTH_16B);
 }
 
-uint16_t CRC16_calc(void *data, uint32_t size)
+uint16_t crc16_calc(void *data, uint32_t size)
 {
     LL_CRC_ResetCRCCalculationUnit(CRC);
     LL_CRC_SetInputDataReverseMode(CRC, LL_CRC_INDATA_REVERSE_WORD);
@@ -50,9 +50,9 @@ uint16_t CRC16_calc(void *data, uint32_t size)
     return LL_CRC_ReadData16(CRC);
 }
 
-void CRC16_to_end_array(void *data, uint32_t size)
+void crc16_to_end_array(void *data, uint32_t size)
 {
-    uint16_t crc = CRC16_calc(data, size);
+    uint16_t crc = crc16_calc(data, size);
     uint16_t *end = (uint16_t *)((uint8_t *)data + size);
     *end = crc;
 }

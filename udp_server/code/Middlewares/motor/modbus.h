@@ -8,7 +8,7 @@
 
 enum modbus_coil_state {
     COIL_OFF = 0x0000,
-    COIL_ON = 0xFF00
+    COIL_ON = 0xFF00,
 };
 
 enum modbus_err {
@@ -28,7 +28,12 @@ enum modbus_err {
 struct modbus_out {
     enum modbus_err status;
     uint16_t quality;
-    uint16_t regs[REGS_COUNT_MAX];
+
+    union {
+        uint8_t exc_status;
+        uint16_t regs[REGS_COUNT_MAX];
+        uint8_t coils[REGS_COUNT_MAX * 2];
+    };
 };
 
 struct modbus_head {
@@ -46,20 +51,42 @@ struct modbus_reg {
     uint16_t val;
 };
 
+struct modbus_mask_reg {
+    uint16_t addr;
+    uint16_t and_mask;
+    uint16_t or_mask;
+};
+
 struct modbus_req {
     struct modbus_head head;
 
     union {
         struct modbus_coil coil;
 
+        struct {
+            uint16_t addr;
+            uint16_t quality;
+        } coils;
+
         struct modbus_reg reg;
+
+        struct modbus_mask_reg mask_reg;
 
         struct {
             uint16_t addr;
             uint16_t quality;
             uint8_t byte_count;
-            uint16_t regs[REGS_COUNT_MAX];
+            uint16_t vals[REGS_COUNT_MAX];
         } __attribute__((packed)) multi_regs;
+
+        struct {
+            uint16_t read_addr;
+            uint16_t read_quality;
+            uint16_t write_addr;
+            uint16_t write_vals[REGS_COUNT_MAX];
+            uint16_t write_quality;
+            uint8_t write_byte_count;
+        } __attribute__((packed)) rw_multi_regs;
 
         struct {
             uint16_t addr;
@@ -74,12 +101,19 @@ struct modbus_resp {
     union {
         struct {
             uint8_t byte_count;
-            uint16_t regs[REGS_COUNT_MAX];
-        } __attribute__((packed)) holding_regs, input_regs;
+            uint16_t vals[REGS_COUNT_MAX];
+        } __attribute__((packed)) read_regs;
 
         struct modbus_coil coil;
 
+        struct {
+            uint8_t byte_count;
+            uint8_t vals[REGS_COUNT_MAX * 2];
+        } __attribute__((packed)) coils;
+
         struct modbus_reg reg;
+
+        struct modbus_mask_reg mask_reg;
 
         struct {
             uint16_t addr;
@@ -87,6 +121,7 @@ struct modbus_resp {
         } multi_regs;
 
         enum modbus_err err;
+        uint8_t exc_status;
     };
 } __attribute__((packed));
 
