@@ -18,9 +18,9 @@ enum modbus_func {
     // FUNC_READ_DEVICE_ID = 0x2B,
     FUNC_MASK_WRITE_REG = 0x16,
     FUNC_WRITE_MULTIPLE_REGS = 0x10,
-    FUNC_WRITE_MULTIPLE_COILS = 0x0F,
+    // FUNC_WRITE_MULTIPLE_COILS = 0x0F,
     FUNC_READ_WRITE_MULTIPLE_REGS = 0x17,
-    FUNC_READ_FIFO = 0x18,
+    // FUNC_READ_FIFO = 0x18,
 };
 
 void modbus_init(void)
@@ -39,9 +39,9 @@ void modbus_read_coils(struct modbus *modbus, uint16_t addr, uint16_t quality)
 {
     struct modbus_req *req = &modbus->req;
     req->head.func = FUNC_READ_COILS;
-    req->coils.addr = __REVSH(addr);
-    req->coils.quality = __REVSH(quality);
-    uint32_t size = sizeof(req->head) + sizeof(req->coils);
+    req->r_coils.addr = __REVSH(addr);
+    req->r_coils.quality = __REVSH(quality);
+    uint32_t size = sizeof(req->head) + sizeof(req->r_coils);
     start_resp(modbus, size);
 }
 
@@ -57,6 +57,20 @@ void modbus_write_single_coil(
     uint32_t size = sizeof(req->head) + sizeof(req->coil);
     start_resp(modbus, size);
 }
+
+// void modbus_write_multi_coils(
+//     struct modbus *modbus,
+//     uint16_t addr,
+//     uint8_t vals)
+// {
+//     struct modbus_req *req = &modbus->req;
+//     req->head.func = FUNC_WRITE_MULTIPLE_COILS;
+//     req->mask_reg.addr = __REVSH(addr);
+//     req->mask_reg.and_mask = __REVSH(and_mask);
+//     req->mask_reg.or_mask = __REVSH(or_mask);
+//     uint32_t size = sizeof(req->head) + sizeof(req->mask_reg);
+//     start_resp(modbus, size);
+// }
 
 void modbus_write_single_reg(struct modbus *modbus, uint16_t addr, uint16_t val)
 {
@@ -76,9 +90,9 @@ void modbus_write_mask_reg(
 {
     struct modbus_req *req = &modbus->req;
     req->head.func = FUNC_MASK_WRITE_REG;
-    req->mask_reg.addr = addr;
-    req->mask_reg.and_mask = and_mask;
-    req->mask_reg.or_mask = or_mask;
+    req->mask_reg.addr = __REVSH(addr);
+    req->mask_reg.and_mask = __REVSH(and_mask);
+    req->mask_reg.or_mask = __REVSH(or_mask);
     uint32_t size = sizeof(req->head) + sizeof(req->mask_reg);
     start_resp(modbus, size);
 }
@@ -92,7 +106,11 @@ void modbus_write_single_reg32(
     modbus_write_multi_regs(modbus, addr, (uint16_t *)&rev_word, 2);
 }
 
-void modbus_write_multi_regs(struct modbus *modbus, uint16_t addr, uint16_t *regs, uint16_t quality)
+void modbus_write_multi_regs(
+    struct modbus *modbus,
+    uint16_t addr,
+    uint16_t *regs,
+    uint16_t quality)
 {
     struct modbus_req *req = &modbus->req;
     req->head.func = FUNC_WRITE_MULTIPLE_REGS;
@@ -108,7 +126,10 @@ void modbus_write_multi_regs(struct modbus *modbus, uint16_t addr, uint16_t *reg
     start_resp(modbus, size);
 }
 
-void modbus_read_holding_regs(struct modbus *modbus, uint16_t addr, uint16_t quality)
+void modbus_read_holding_regs(
+    struct modbus *modbus,
+    uint16_t addr,
+    uint16_t quality)
 {
     struct modbus_req *req = &modbus->req;
     req->head.func = FUNC_READ_HOLDING_REGS;
@@ -176,10 +197,10 @@ void modbus_resp_working(struct modbus *modbus, uint32_t size)
     } else {
         switch (resp->head.func) {
         case FUNC_READ_COILS: {
-            uint32_t quality = resp->coils.byte_count;
+            uint32_t quality = resp->r_coils.byte_count;
             out->quality = quality;
             for (uint32_t i = 0; i < quality; i++) {
-                out->coils[i] = resp->coils.vals[i];
+                out->coils[i] = resp->r_coils.vals[i];
             }
         } break;
         case FUNC_WRITE_SINGLE_COIL: {

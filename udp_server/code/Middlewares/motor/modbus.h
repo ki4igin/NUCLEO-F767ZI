@@ -66,7 +66,13 @@ struct modbus_req {
         struct {
             uint16_t addr;
             uint16_t quality;
-        } coils;
+        } r_coils;
+
+        struct {
+            uint16_t addr;
+            uint8_t byte_count;
+            uint8_t vals[REGS_COUNT_MAX];
+        } w_coils;
 
         struct modbus_reg reg;
 
@@ -109,7 +115,12 @@ struct modbus_resp {
         struct {
             uint8_t byte_count;
             uint8_t vals[REGS_COUNT_MAX * 2];
-        } __attribute__((packed)) coils;
+        } __attribute__((packed)) r_coils;
+
+        struct {
+            uint16_t addr;
+            uint16_t quality;
+        } __attribute__((packed)) w_coils;
 
         struct modbus_reg reg;
 
@@ -140,6 +151,11 @@ struct modbus {
 
 void modbus_init(void);
 void modbus_resp_working(struct modbus *modbus, uint32_t size);
+void modbus_read_coils(struct modbus *modbus, uint16_t addr, uint16_t quality);
+void modbus_write_single_coil(
+    struct modbus *modbus,
+    uint16_t addr,
+    enum modbus_coil_state state);
 void modbus_write_single_coil(
     struct modbus *modbus,
     uint16_t addr,
@@ -148,6 +164,15 @@ void modbus_write_single_reg(
     struct modbus *modbus,
     uint16_t addr,
     uint16_t val);
+void modbus_write_mask_reg(
+    struct modbus *modbus,
+    uint16_t addr,
+    uint16_t and_mask,
+    uint16_t or_mask);
+void modbus_write_single_reg32(
+    struct modbus *modbus,
+    uint16_t addr,
+    uint32_t val);
 void modbus_write_multi_regs(
     struct modbus *modbus,
     uint16_t addr,
@@ -161,5 +186,13 @@ void modbus_read_input_regs(
     struct modbus *modbus,
     uint16_t addr,
     uint16_t quality);
+void modbus_read_write_multiple_regs(
+    struct modbus *modbus,
+    uint16_t read_addr,
+    uint16_t read_quality,
+    uint16_t write_addr,
+    uint16_t *write_regs,
+    uint16_t write_quality);
+void modbus_read_exception_status(struct modbus *modbus);
 
 #endif
