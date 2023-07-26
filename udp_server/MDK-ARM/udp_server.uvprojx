@@ -314,7 +314,7 @@
           </ArmAdsMisc>
           <Cads>
             <interw>1</interw>
-            <Optim>4</Optim>
+            <Optim>1</Optim>
             <oTime>0</oTime>
             <SplitLS>0</SplitLS>
             <OneElfS>1</OneElfS>
@@ -338,7 +338,7 @@
             <v6Rtti>0</v6Rtti>
             <VariousControls>
               <MiscControls></MiscControls>
-              <Define>USE_FULL_LL_DRIVER,USE_HAL_DRIVER,STM32F767xx</Define>
+              <Define>USE_FULL_LL_DRIVER,USE_HAL_DRIVER,STM32F767xx DEBUG, HSE_VALUE=10000000U</Define>
               <Undefine></Undefine>
               <IncludePath>../code/Src;../code/Middlewares/Third_Party/LwIP/src/include;../code/Middlewares/Third_Party/LwIP/system;../code/Drivers/STM32F7xx_HAL_Driver/Inc;../code/Drivers/STM32F7xx_HAL_Driver/Inc/Legacy;../code/Drivers/BSP/Components/lan8742;../code/Middlewares/Third_Party/LwIP/src/include/netif/ppp;../code/Drivers/CMSIS/Device/ST/STM32F7xx/Include;../code/Middlewares/Third_Party/LwIP/src/include/lwip;../code/Middlewares/Third_Party/LwIP/src/include/lwip/apps;../code/Middlewares/Third_Party/LwIP/src/include/lwip/priv;../code/Middlewares/Third_Party/LwIP/src/include/lwip/prot;../code/Middlewares/Third_Party/LwIP/src/include/netif;../code/Middlewares/Third_Party/LwIP/src/include/compat/posix;../code/Middlewares/Third_Party/LwIP/src/include/compat/posix/arpa;../code/Middlewares/Third_Party/LwIP/src/include/compat/posix/net;../code/Middlewares/Third_Party/LwIP/src/include/compat/posix/sys;../code/Middlewares/Third_Party/LwIP/src/include/compat/stdc;../code/Middlewares/Third_Party/LwIP/system/arch;../code/Drivers/CMSIS/Include</IncludePath>
             </VariousControls>
@@ -448,6 +448,21 @@
               <FileName>usart_ex.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\code\Src\usart_ex.c</FilePath>
+            </File>
+            <File>
+              <FileName>crc.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\code\Src\crc.c</FilePath>
+            </File>
+            <File>
+              <FileName>modbus.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\code\Src\modbus.c</FilePath>
+            </File>
+            <File>
+              <FileName>motor.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\code\Src\motor.c</FilePath>
             </File>
           </Files>
         </Group>
@@ -578,6 +593,11 @@
               <FileName>stm32f7xx_ll_dma.c</FileName>
               <FileType>1</FileType>
               <FilePath>../code/Drivers/STM32F7xx_HAL_Driver/Src/stm32f7xx_ll_dma.c</FilePath>
+            </File>
+            <File>
+              <FileName>stm32f7xx_ll_crc.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\code\Drivers\STM32F7xx_HAL_Driver\Src\stm32f7xx_ll_crc.c</FilePath>
             </File>
           </Files>
         </Group>
