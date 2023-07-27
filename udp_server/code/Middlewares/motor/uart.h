@@ -17,4 +17,3 @@ void uart7_recv_array_dma(void *buf, uint32_t size);
 void uart7_recv_callback(uint32_t size);
 
 #endif
-

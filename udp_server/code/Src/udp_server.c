@@ -1,7 +1,7 @@
 #include "udp_server.h"
 
 #include "udp.h"
-#include "servo.h"
+#include "motor.h"
 
 #define UDP_SERVER_PORT_CMD 2020
 #define UDP_CLIENT_PORT_CMD 2021
@@ -12,10 +12,9 @@ static struct ip4_addr ip;
 
 struct cmd_deg {
     uint32_t id;
-    uint32_t deg;
+    int32_t deg;
 };
 
-extern struct servo servo;
 static void recv_callback(
     void *arg,
     struct udp_pcb *pcb,
@@ -31,8 +30,7 @@ static void recv_callback(
     // udp_send(pcb_cmd_c, p);
 
     struct cmd_deg *cmd_deg = p->payload;
-    servo_move(&servo, cmd_deg->deg);
-
+    motor_az_offset(cmd_deg->deg);
     pbuf_free(p);
 }
 

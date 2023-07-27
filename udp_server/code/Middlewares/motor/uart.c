@@ -10,6 +10,16 @@ static uint32_t uart4_recv_timeout;
 static uint32_t uart7_recv_size;
 static uint32_t uart7_recv_timeout;
 
+__weak void uart4_recv_callback(uint32_t size)
+{
+    (void)size;
+}
+
+__weak void uart7_recv_callback(uint32_t size)
+{
+    (void)size;
+}
+
 void uart4_init(void)
 {
     LL_USART_InitTypeDef USART_InitStruct = {0};
