@@ -25,9 +25,17 @@
 #include "udp_server.h"
 #include "modbus.h"
 #include "motor.h"
+#include "tim.h"
+#include "servo.h"
 
 /* Private includes ----------------------------------------------------------*/
+struct servo servo_az = {
+    .tim.ccr = &TIM3->CCR4,
+};
 
+struct servo servo_el = {
+    .tim.ccr = &TIM3->CCR2,
+};
 /* Private typedef -----------------------------------------------------------*/
 
 /* Private define ------------------------------------------------------------*/
@@ -67,18 +75,26 @@ int main(void)
 
     /* Infinite loop */
 
-    uint16_t cnt = 0;
+    uint32_t cnt = 0;
     const uint32_t test_data = 0xAAAABBBB;
-    float deg = 0;
+    uint32_t deg = 0;
+
+    MX_TIM3_Init();
+
+    servo_init(&servo_az, TIM3->ARR, 500, 2500);
+    servo_init(&servo_el, TIM3->ARR, 500, 2500);
 
     while (1) {
         MX_LWIP_Process();
 
-        cnt++;
-        if (cnt == 0) {
-            deg += 0.1;
-            motor_az_offset(deg);
-        } else if (cnt == INT16_MAX / 2) {
+        if (cnt++ == 0) {
+            deg = deg < 179 ? deg + 2 : 0;
+            // deg < 179 ? deg++ : deg = 0;
+            // deg += 1;
+            // motor_az_offset(deg);
+            // servo_move(&servo, deg);
+        } else if (cnt == UINT16_MAX * 8) {
+            cnt = 0;
         }
     }
 }
